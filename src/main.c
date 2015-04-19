@@ -11,38 +11,15 @@
 static Window *s_main_window;
 static Layer *s_pad_layer;
 static TextLayer *scr;
-static int pos=60;
+static int pos;
+static int sp;
 static GPoint posb;
 static GPoint speed;
 static int bounces;
 static int score;
 
 
-char *itoa(int num)
-{
-static char buff[20] = {};
-int i = 0, temp_num = num, length = 0;
-char *string = buff;
-if(num >= 0) {
-// count how many characters in the number
-while(temp_num) {
-temp_num /= 10;
-length++;
-}
-// assign the number to the buffer starting at the end of the 
-// number and going to the begining since we are doing the
-// integer to character conversion on the last number in the
-// sequence
-for(i = 0; i < length; i++) {
-buff[(length-1)-i] = '0' + (num % 10);
-num /= 10;
-}
-buff[i] = '\0'; // can't forget the null byte to properly end our string
-}
-else
-return "Unsupported Number";
-return string;
-}
+
 
 
 
@@ -53,11 +30,15 @@ static void pad_update_proc(Layer *this_layer, GContext *ctx) {
   graphics_fill_rect(ctx, layer_get_bounds(s_pad_layer), 0, GCornerNone);
 	
 	//bounds for paddle
-	if(pos<0){
+	pos += sp;
+	if(pos<=0){
 		pos =0;
 	}
-	if(pos>105){
+	else if(pos>=105){
 		pos = 105;
+	}
+	else{
+		//pos += sp;
 	}
 	//Draw paddle
   graphics_context_set_fill_color(ctx, GColorWhite);
@@ -66,13 +47,14 @@ static void pad_update_proc(Layer *this_layer, GContext *ctx) {
 	//direction and speed of ball
 	if(posb.x>=130){
 		speed.x = speed.x * -1;
+		score+=1;
 	}
 	if(posb.y<=5 || posb.y>=140){
 		speed.y = speed.y * -1;
 		bounces += 1;
 	}
-	if(posb.x<=20){
-		if(abs(posb.y+5-pos-22)<23){
+	if(posb.x>=16 && posb.x<20){
+		if(abs(posb.y+5-(pos+23))<23){
 			if(abs(posb.y-pos-11)<12){
 				if(speed.y<7){speed.y+=1;}
 				else{speed.y=7;}
@@ -81,16 +63,16 @@ static void pad_update_proc(Layer *this_layer, GContext *ctx) {
 				if(speed.y>-7){speed.y-=1;}
 				else{speed.y=-7;}
 			}
-			else{speed.x*=-1;}
+			speed.x*=-1;
 			
-			posb.x += 5;
+			//posb.x += 5;
 		}
 		
-		else{
+		if(posb.x<=5){
 			posb = GPoint(72, 84);
 	
-			speed.y = (rand()%5)*((2*rand()%2)-1);
-			speed.x = (rand()%11)*((2*rand()%2)-1);
+			//speed.y = (rand()%1)*((2*rand()%2)-1);
+			//speed.x = (rand()%2)*((2*rand()%2)-1);
 			score-=1;
 		}
 	}
@@ -103,9 +85,19 @@ static void pad_update_proc(Layer *this_layer, GContext *ctx) {
 	
 }
 
-static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-	pos -= 10;
+static void data_handler(AccelData *data, uint32_t num_samples) {
+	
+	if(data[0].y<-75){sp = 3;}
+	else if(data[0].y>75){sp=-3;}
+	else{sp=0;}
 	layer_mark_dirty(s_pad_layer);
+	
+}
+
+
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+	//pos -= 10;
+	//layer_mark_dirty(s_pad_layer);
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -113,8 +105,8 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-	pos += 10;
-	layer_mark_dirty(s_pad_layer);
+	//pos += 10;
+	//layer_mark_dirty(s_pad_layer);
 }
 
 static void click_config_provider(void *context) {
@@ -129,11 +121,12 @@ static void main_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect window_bounds = layer_get_bounds(window_layer);
 	
-	scr = text_layer_create(GRect(0, 30, 144, 50));
+	scr = text_layer_create(GRect(50, 0, 144, 50));
   text_layer_set_background_color(scr, GColorClear);
   text_layer_set_text_color(scr, GColorWhite);
 	
-	char *scor= itoa(score);
+	static char scor[32];
+	snprintf(scor, sizeof(scor), "Score: %i", score);
   text_layer_set_text(scr, scor);
 
   // Create Layer
@@ -162,10 +155,16 @@ static void init(void) {
   window_set_click_config_provider(s_main_window, click_config_provider);
   window_stack_push(s_main_window, true);
 	
+	int num_samples = 3;
+  accel_data_service_subscribe(num_samples, data_handler);
+	accel_service_set_sampling_rate(ACCEL_SAMPLING_100HZ);
+	
+	pos=60;
+	sp = 0;
 	posb = GPoint(72, 84);
 	
-	speed.y = (rand()%5)*((2*rand()%2)-1);
-	speed.x = (rand()%11)*((2*rand()%2)-1);
+	speed.y = (rand()%1)*((2*rand()%2)-1);
+	speed.x = (rand()%2)*((2*rand()%2)-1);
 	
 	bounces = 0;
 	score = 7;
@@ -175,6 +174,8 @@ static void init(void) {
 static void deinit(void) {
   // Destroy main Window
   window_destroy(s_main_window);
+	accel_data_service_unsubscribe();
+	
 }
 
 int main(void) {
