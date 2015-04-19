@@ -48,6 +48,11 @@ static void pad_update_proc(Layer *this_layer, GContext *ctx) {
 	if(posb.x>=130){
 		speed.x = speed.x * -1;
 		score+=1;
+		
+	static char scor[32];
+	snprintf(scor, sizeof(scor), "Score: %i", score);
+  text_layer_set_text(scr, scor);
+		
 	}
 	if(posb.y<=5 || posb.y>=140){
 		speed.y = speed.y * -1;
@@ -69,11 +74,17 @@ static void pad_update_proc(Layer *this_layer, GContext *ctx) {
 		}
 		
 		if(posb.x<=5){
-			posb = GPoint(72, 84);
-	
+			speed.x = speed.x* -1;
+			posb.x+= speed.x;
+			
+			layer_mark_dirty(s_pad_layer);
 			//speed.y = (rand()%1)*((2*rand()%2)-1);
 			//speed.x = (rand()%2)*((2*rand()%2)-1);
 			score-=1;
+			
+	static char scor[32];
+	snprintf(scor, sizeof(scor), "Score: %i", score);
+  text_layer_set_text(scr, scor);
 		}
 	}
 	
@@ -93,29 +104,6 @@ static void data_handler(AccelData *data, uint32_t num_samples) {
 	layer_mark_dirty(s_pad_layer);
 	
 }
-
-
-static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-	//pos -= 10;
-	//layer_mark_dirty(s_pad_layer);
-}
-
-static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-//  text_layer_set_text(s_output_layer, "Select pressed!");
-}
-
-static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-	//pos += 10;
-	//layer_mark_dirty(s_pad_layer);
-}
-
-static void click_config_provider(void *context) {
-  // Register the ClickHandlers
-  window_single_repeating_click_subscribe(BUTTON_ID_UP, 90, up_click_handler);
-  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
-  window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 90, down_click_handler);
-}
-
 
 static void main_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
@@ -152,7 +140,6 @@ static void init(void) {
     .load = main_window_load,
     .unload = main_window_unload,
   });
-  window_set_click_config_provider(s_main_window, click_config_provider);
   window_stack_push(s_main_window, true);
 	
 	int num_samples = 3;
@@ -167,7 +154,7 @@ static void init(void) {
 	speed.x = (rand()%2)*((2*rand()%2)-1);
 	
 	bounces = 0;
-	score = 7;
+	score = 0;
 	
 }
 

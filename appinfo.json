@@ -4,13 +4,13 @@
         ""
     ],
     "companyName": "aditsri@gmail.com",
-    "longName": "Game_two",
+    "longName": "Pebble Pong",
     "projectType": "native",
     "resources": {
         "media": []
     },
     "sdkVersion": "2",
-    "shortName": "Game_two",
+    "shortName": "Pong",
     "uuid": "306e4bde-c67d-4be1-b164-b44543c44b19",
     "versionCode": 1,
     "versionLabel": "1.0",
