@@ -1,2 +1,2 @@
 # PebbleApp
-Collection of my pebble apps
+My first pebble app for a hackathon
